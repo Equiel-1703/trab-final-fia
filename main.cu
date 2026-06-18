@@ -7,6 +7,7 @@
 
 #include "KernelScorer.hpp"
 #include "SimulatedAnnealing.hpp"
+#include "HillClimbing.hpp"
 
 // ======================================== Multiplicação de Matrizes Ingênuo ========================================
 __global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
@@ -45,26 +46,34 @@ int main(int argc, const char *args[])
   // Instanciando o avaliador com o kernel da multiplicação de matrizes e as dimensões de entrada
   KernelScorer<decltype(matrix_multiply)> scorer(matrix_multiply, input_dimensions);
 
-  // Instanciando a Inteligência Artificial
+  // Instanciando os algoritmos de IA
   SimulatedAnnealing<decltype(matrix_multiply)> sa(scorer);
+  HillClimbing<decltype(matrix_multiply)> hc(scorer);
 
   // Começamos de propósito com um bloco pequeno e ruim
   dim3 initial_block(8, 8);
 
-  std::cout << "\n===== Iniciando Simulated Annealing =====\n";
+  std::cout << "\n===== Iniciando Algoritmos =====\n";
   std::cout << "Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
   std::cout << "Bloco Inicial: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
 
-  // Rodando a IA
-  auto best_result = sa.simulated_annealing(initial_block);
+  std::cout << "\n ===== Executando Hill Climbing =====\n";
+  auto hc_result = hc.hill_climbing(initial_block);
 
-  // Imprimindo o resultado final
-  dim3 best_block = best_result.first;
-  double best_score = best_result.second;
+  dim3 hc_best_block = hc_result.first;
+  double hc_best_score = hc_result.second;
 
-  std::cout << "\n===== Resultado Final =====\n";
-  std::cout << "Melhor Configuração de Bloco: (" << best_block.x << ", " << best_block.y << ")\n";
-  std::cout << "Pontuação do Kernel: " << best_score << " (0.0 a 1.0, onde 1.0 é o ideal)\n";
+  std::cout << "\n\t* Melhor bloco (Hill Climbing): " << "(" << hc_best_block.x << ", " << hc_best_block.y << ")\n";
+  std::cout << "\t* Pontuação (Hill Climbing): " << hc_best_score << " (0.0 a 1.0, onde 1.0 é o ideal)\n";
+
+  std::cout << "\n ===== Executando Simulated Annealing =====\n";
+  auto sa_result = sa.simulated_annealing(initial_block);
+
+  dim3 sa_best_block = sa_result.first;
+  double sa_best_score = sa_result.second;
+
+  std::cout << "\n\t* Melhor bloco (Simulated Annealing): " << "(" << sa_best_block.x << ", " << sa_best_block.y << ")\n";
+  std::cout << "\t* Pontuação (Simulated Annealing): " << sa_best_score << " (0.0 a 1.0, onde 1.0 é o ideal)\n";
 
   return EXIT_SUCCESS;
 }
