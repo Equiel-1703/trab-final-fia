@@ -113,6 +113,27 @@ private:
   }
 
   /*
+    Avalia a localidade espacial do bloco no Cache L1.
+    Premia blocos bidimensionais (ex: 16x16, 32x16) que favorecem o reuso de dados
+    e penaliza severamente blocos 1D (ex: 32x1) que causam thrashing de cache.
+  */
+  double spatial_locality_score(dim3 &block)
+  {
+    double dx = static_cast<double>(block.x);
+    double dy = static_cast<double>(block.y);
+
+    double diff = dx - dy;
+    double sum = dx + dy;
+
+    // Evita divisão por zero (embora blocos nunca tenham dimensão 0)
+    if (sum == 0.0)
+      return 0.0;
+
+    double penalty = (diff / sum) * (diff / sum);
+    return 1.0 - penalty;
+  }
+
+  /*
   Verifica quão bem o bloco está alinhado com os warps no eixo x. Desalinhamento de warps causa penalidade severa
   no desempenho.
   */
@@ -147,9 +168,15 @@ public:
     double warp_eff = this->warp_efficiency(threads_per_block);
     double wave_eff = this->wave_quantization_efficiency(total_blocks);
     double boundary_eff = this->boundary_efficiency(block, grid);
+    double spatial_score = this->spatial_locality_score(block);
     double coalescing = this->memory_coalescing_score(block);
 
-    return 0.35 * occupancy_score + 0.35 * warp_eff + 0.10 * wave_eff + 0.10 * boundary_eff + 0.10 * coalescing;
+    return 0.25 * occupancy_score +
+           0.25 * warp_eff +
+           0.10 * wave_eff +
+           0.10 * boundary_eff +
+           0.15 * coalescing +
+           0.15 * spatial_score;
   }
 
   dim3 get_input_dimensions() const
