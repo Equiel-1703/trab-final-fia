@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <iostream>
 
 #include "neighbors.hpp"
 #include "KernelScorer.hpp"
@@ -73,10 +72,6 @@ public:
         break;
       }
     }
-
-    std::cout << "Hill Climbing concluído! Pico encontrado: Block("
-              << current_block.x << ", " << current_block.y
-              << ") com score " << current_score << std::endl;
 
     return std::make_pair(current_block, current_score);
   }

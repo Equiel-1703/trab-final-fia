@@ -57,7 +57,7 @@ int main(int argc, const char *args[])
   std::cout << "Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
   std::cout << "Bloco Inicial: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
 
-  std::cout << "\n ===== Executando Hill Climbing =====\n";
+  std::cout << "\n===== Executando Hill Climbing =====\n";
   auto hc_result = hc.hill_climbing(initial_block);
 
   dim3 hc_best_block = hc_result.first;
@@ -66,7 +66,7 @@ int main(int argc, const char *args[])
   std::cout << "\n\t* Melhor bloco (Hill Climbing): " << "(" << hc_best_block.x << ", " << hc_best_block.y << ")\n";
   std::cout << "\t* Pontuação (Hill Climbing): " << hc_best_score << " (0.0 a 1.0, onde 1.0 é o ideal)\n";
 
-  std::cout << "\n ===== Executando Simulated Annealing =====\n";
+  std::cout << "\n===== Executando Simulated Annealing =====\n";
   auto sa_result = sa.simulated_annealing(initial_block);
 
   dim3 sa_best_block = sa_result.first;

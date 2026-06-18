@@ -3,7 +3,6 @@
 #include <cmath>
 #include <vector>
 #include <random>
-#include <iostream>
 
 #include "neighbors.hpp"
 #include "KernelScorer.hpp"
@@ -95,7 +94,6 @@ public:
       T *= alpha;
     }
 
-    std::cout << "Busca concluída! Melhor configuração: Block(" << best_block.x << ", " << best_block.y << ") com score " << best_score << std::endl;
     return std::make_pair(best_block, best_score);
   }
 };
