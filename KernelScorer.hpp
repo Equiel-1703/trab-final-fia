@@ -138,7 +138,7 @@ public:
     this->device_properties = get_device_properties();
   }
 
-  double score(dim3 &block, dim3 &grid)
+  double score(dim3 block, dim3 grid)
   {
     int threads_per_block = block.x * block.y * block.z;
     int total_blocks = grid.x * grid.y * grid.z;
@@ -150,5 +150,10 @@ public:
     double coalescing = this->memory_coalescing_score(block);
 
     return 0.35 * occupancy_score + 0.35 * warp_eff + 0.10 * wave_eff + 0.10 * boundary_eff + 0.10 * coalescing;
+  }
+
+  dim3 get_input_dimensions() const
+  {
+    return this->input_dimensions;
   }
 };

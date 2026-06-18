@@ -5,45 +5,66 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include "neighbors.hpp"
 #include "KernelScorer.hpp"
+#include "SimulatedAnnealing.hpp"
 
-// ======================================== Simple kernel for testing ========================================
-__global__ void vector_add(const float *a, const float *b, float *c, int n)
+// ======================================== Multiplicação de Matrizes Ingênuo ========================================
+__global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  // Mapeamento 2D das threads para as coordenadas da matriz
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if (tid < n)
+  // Boundary Check (Proteção de Limites)
+  // Garante que apenas as threads dentro do tamanho válido N façam trabalho.
+  // As threads "excedentes" nas bordas falham silenciosamente aqui, ativando
+  // o desperdício que a boundary_efficiency penaliza
+  if (row < N && col < N)
   {
-    c[tid] = a[tid] + b[tid];
+    float sum = 0.0f;
+
+    // Algoritmo Ingênuo: Produto escalar da linha de A pela coluna de B
+    for (int k = 0; k < N; ++k)
+    {
+      // A é percorrido por linha (acesso contíguo na memória, bom coalescimento)
+      // B é percorrido por coluna (strides longos, péssimo coalescimento)
+      sum += A[row * N + k] * B[k * N + col];
+    }
+
+    // Escrita do resultado
+    C[row * N + col] = sum;
   }
 }
-// ===========================================================================================================
+// ===================================================================================================================
 
 int main(int argc, const char *args[])
 {
-  const int INPUT_SIZE = 1024;
-  const dim3 input_dimensions(INPUT_SIZE, 1);
+  const int INPUT_SIZE = 1000;
+  const dim3 input_dimensions(INPUT_SIZE, INPUT_SIZE, 1);
 
-  dim3 block(16, 16);
-  dim3 grid(
-      (INPUT_SIZE + block.x - 1) / block.x,
-      (INPUT_SIZE + block.y - 1) / block.y);
+  // Instanciando o avaliador com o kernel da multiplicação de matrizes e as dimensões de entrada
+  KernelScorer<decltype(matrix_multiply)> scorer(matrix_multiply, input_dimensions);
 
-  KernelScorer scorer(vector_add, input_dimensions);
-  double final_score = scorer.score(block, grid);
+  // Instanciando a Inteligência Artificial
+  SimulatedAnnealing<decltype(matrix_multiply)> sa(scorer);
 
-  std::cout << "\n========== Kernel ==========\n";
-  std::cout << "Kernel: vector_add\n";
+  // Começamos de propósito com um bloco pequeno e ruim
+  dim3 initial_block(8, 8);
 
-  std::cout << "\n========== Launch Configuration ==========\n";
-  std::cout << "Block: " << block.x << " x " << block.y << '\n';
-  std::cout << "Grid: " << grid.x << " x " << grid.y << '\n';
-  std::cout << "Threads per block: " << block.x * block.y << '\n';
-  std::cout << "Total blocks: " << grid.x * grid.y << '\n';
+  std::cout << "\n===== Iniciando Simulated Annealing =====\n";
+  std::cout << "Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
+  std::cout << "Bloco Inicial: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
 
-  std::cout << "\n========== Final Score ==========\n";
-  std::cout << "Score: " << final_score << '\n';
+  // Rodando a IA
+  auto best_result = sa.simulated_annealing(initial_block);
+
+  // Imprimindo o resultado final
+  dim3 best_block = best_result.first;
+  double best_score = best_result.second;
+
+  std::cout << "\n===== Resultado Final =====\n";
+  std::cout << "Melhor Configuração de Bloco: (" << best_block.x << ", " << best_block.y << ")\n";
+  std::cout << "Pontuação do Kernel: " << best_score << " (0.0 a 1.0, onde 1.0 é o ideal)\n";
 
   return EXIT_SUCCESS;
 }

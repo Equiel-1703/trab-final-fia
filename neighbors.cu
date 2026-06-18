@@ -40,7 +40,7 @@ int get_index(int value)
     return -1;
 }
 
-std::vector<dim3> generate_neighbors(dim3 current_block)
+std::vector<dim3> generate_neighbors(const dim3 &current_block)
 {
     const auto &VALID_DIMS = get_valid_dims();
     std::vector<dim3> valid_neighbors;
