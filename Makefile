@@ -1,5 +1,5 @@
 OUTPUT_FILE = main.out
-SRC_FILES = main.cu neighbors.cu
+SRC_FILES = main.cu neighbors.cu KernelScorer.cu
 
 CC = nvcc
 
