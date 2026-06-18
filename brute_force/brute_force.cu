@@ -48,6 +48,11 @@ int main(int argc, char const *argv[])
   dim3 block(block_x, block_y);
   dim3 grid((N + block.x - 1) / block.x, (N + block.y - 1) / block.y);
 
+  // Imprimindo configurações do lançamento do kernel
+  std::cout << "Tamanho da matriz: " << N << "x" << N << std::endl;
+  std::cout << "Tamanho do bloco: " << block.x << "x" << block.y << std::endl;
+  std::cout << "Tamanho do grid: " << grid.x << "x" << grid.y << std::endl;
+
   // Alocando memória para as matrizes A, B e C na CPU
   float *h_A = new float[N * N];
   float *h_B = new float[N * N];
