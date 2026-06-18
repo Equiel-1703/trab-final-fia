@@ -16,6 +16,28 @@ private:
   int active_blocks_per_sm = 0;
 
   /*
+    Retorna as propriedades do dispositivo CUDA.
+  */
+  cudaDeviceProp get_device_properties()
+  {
+    cudaDeviceProp prop;
+
+    // Fetch properties for the first GPU
+    cudaError_t status = cudaGetDeviceProperties(&prop, 0);
+
+    if (status == cudaSuccess)
+    {
+      std::cout << "Number of Streaming Multiprocessors (SMs): " << prop.multiProcessorCount << std::endl;
+      return prop;
+    }
+    else
+    {
+      std::cerr << "CUDA Error: " << cudaGetErrorString(status) << std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  /*
     Verifica se o número de threads por bloco é perfeitamente divisível em warps, sem desperdiçar nenhuma thread.
   */
   double warp_efficiency(int threads_per_block)
@@ -100,7 +122,7 @@ private:
     {
       return 1.0; // Alinhamento perfeito
     }
-    else if (block.x >= WARP_SIZE / 2)
+    else if (static_cast<int>(block.x) >= WARP_SIZE / 2)
     {
       return 0.4; // Meio warp (penalidade pesada, gera 2 transações em vez de 1)
     }
@@ -130,22 +152,3 @@ public:
     return 0.35 * occupancy_score + 0.35 * warp_eff + 0.10 * wave_eff + 0.10 * boundary_eff + 0.10 * coalescing;
   }
 };
-
-inline cudaDeviceProp get_device_properties()
-{
-  cudaDeviceProp deviceProp;
-
-  // Fetch properties for the first GPU
-  cudaError_t status = cudaGetDeviceProperties(&deviceProp, 0);
-
-  if (status == cudaSuccess)
-  {
-    std::cout << "Number of Streaming Multiprocessors (SMs): " << deviceProp.multiProcessorCount << std::endl;
-    return deviceProp;
-  }
-  else
-  {
-    std::cerr << "CUDA Error: " << cudaGetErrorString(status) << std::endl;
-    exit(EXIT_FAILURE);
-  }
-}
