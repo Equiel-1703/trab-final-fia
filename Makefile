@@ -8,7 +8,7 @@ FLAGS = --std=c++17 -Xcompiler -Wall -Wextra
 all: $(OUTPUT_FILE)
 
 $(OUTPUT_FILE): $(SRC_FILES)
-	$(CC) $(FLAGS) -o $(OUTPUT_FILE) $(SRC_FILES)
+	$(CC) -o $(OUTPUT_FILE) $(SRC_FILES) $(FLAGS)
 
 clean:
 	rm -f $(OUTPUT_FILE)
