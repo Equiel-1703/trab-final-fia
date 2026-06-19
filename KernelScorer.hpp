@@ -174,12 +174,12 @@ public:
     double spatial_score = this->spatial_locality_score(block);
     double coalescing = this->memory_coalescing_score(block);
 
-    return 0.25 * occupancy_score +
+    return 0.30 * occupancy_score +
            0.25 * warp_eff +
            0.10 * wave_eff +
            0.10 * boundary_eff +
            0.15 * coalescing +
-           0.15 * spatial_score;
+           0.10 * spatial_score;
   }
 
   dim3 get_input_dimensions() const
