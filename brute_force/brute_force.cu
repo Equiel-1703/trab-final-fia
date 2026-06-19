@@ -4,6 +4,16 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+// Função de checagem de erros CUDA
+inline void check_cuda_error(const cudaError_t &err)
+{
+  if (err != cudaSuccess)
+  {
+    std::cerr << "Erro CUDA: " << cudaGetErrorString(err) << std::endl;
+    exit(EXIT_FAILURE);
+  }
+}
+
 __global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
 {
   // Mapeamento 2D das threads para as coordenadas da matriz
@@ -35,7 +45,7 @@ int main(int argc, char const *argv[])
 {
   if (argc != 4)
   {
-    std::cerr << "Uso: " << argv[0] << " <tamanho_da_matriz> <tamanho_do_bloco_x> <tamanho_do_bloco_y>\n";
+    std::cerr << "Uso: " << argv[0] << " <tamanho_da_matriz> <tamanho_do_bloco_x> <tamanho_do_bloco_y>" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -70,13 +80,13 @@ int main(int argc, char const *argv[])
 
   // Alocando memória para as matrizes A, B e C na GPU
   float *d_A, *d_B, *d_C;
-  cudaMalloc(&d_A, N * N * sizeof(float));
-  cudaMalloc(&d_B, N * N * sizeof(float));
-  cudaMalloc(&d_C, N * N * sizeof(float));
+  check_cuda_error(cudaMalloc(&d_A, N * N * sizeof(float)));
+  check_cuda_error(cudaMalloc(&d_B, N * N * sizeof(float)));
+  check_cuda_error(cudaMalloc(&d_C, N * N * sizeof(float)));
 
   // Copiando as matrizes A e B da CPU para a GPU
-  cudaMemcpy(d_A, h_A, N * N * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_B, h_B, N * N * sizeof(float), cudaMemcpyHostToDevice);
+  check_cuda_error(cudaMemcpy(d_A, h_A, N * N * sizeof(float), cudaMemcpyHostToDevice));
+  check_cuda_error(cudaMemcpy(d_B, h_B, N * N * sizeof(float), cudaMemcpyHostToDevice));
 
   // Medindo o tempo de execução do kernel
   cudaEvent_t start, stop;
@@ -88,6 +98,10 @@ int main(int argc, char const *argv[])
   // Executando o kernel de multiplicação de matrizes
   matrix_multiply<<<grid, block>>>(d_A, d_B, d_C, N);
 
+  // Verifica se houve algum erro durante o lançamento do kernel
+  check_cuda_error(cudaGetLastError());
+  check_cuda_error(cudaDeviceSynchronize());
+
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
 
@@ -97,12 +111,12 @@ int main(int argc, char const *argv[])
   std::cout << "Tempo de execução: " << milliseconds << " ms" << std::endl;
 
   // Copiando o resultado da GPU para a CPU
-  cudaMemcpy(h_C, d_C, N * N * sizeof(float), cudaMemcpyDeviceToHost);
+  check_cuda_error(cudaMemcpy(h_C, d_C, N * N * sizeof(float), cudaMemcpyDeviceToHost));
 
   // Liberando a memória alocada na GPU
-  cudaFree(d_A);
-  cudaFree(d_B);
-  cudaFree(d_C);
+  check_cuda_error(cudaFree(d_A));
+  check_cuda_error(cudaFree(d_B));
+  check_cuda_error(cudaFree(d_C));
 
   // Liberando a memória alocada na CPU
   delete[] h_A;
