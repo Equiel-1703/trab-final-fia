@@ -10,7 +10,7 @@ class KernelScorer
 private:
   const KernelType &kernel;
   const int WARP_SIZE = 32;
-  const dim3 input_dimensions;
+  const dim3 work_dimensions;
 
   cudaDeviceProp device_properties;
   int active_blocks_per_sm = 0;
@@ -56,7 +56,7 @@ private:
   double boundary_efficiency(dim3 &block, dim3 &grid)
   {
     // Total de threads reais que farão trabalho útil (dentro dos limites do IF)
-    double useful_threads = static_cast<double>(input_dimensions.x) * static_cast<double>(input_dimensions.y);
+    double useful_threads = static_cast<double>(work_dimensions.x) * static_cast<double>(work_dimensions.y);
 
     // Total de threads alocadas e lançadas pelo hardware
     double launched_threads = static_cast<double>(grid.x * block.x) * static_cast<double>(grid.y * block.y);
@@ -68,12 +68,12 @@ private:
   }
 
   /*
-  Muitas vezes, 100% de ocupação causa thrashing no cache L1 e esgota registradores, diminuindo o paralelismo em nível
-  de instrução (ILP). A literatura de otimização de CUDA mostra que, geralmente, a partir de 50% a 60% de ocupação,
-  a latência de memória já está bem escondida.
+    Muitas vezes, 100% de ocupação causa thrashing no cache L1 e esgota registradores, diminuindo o paralelismo em nível
+    de instrução (ILP). A literatura de otimização de CUDA mostra que, geralmente, a partir de 50% a 60% de ocupação,
+    a latência de memória já está bem escondida.
 
-  Por isso, em vez de um relacionamento linear (onde 1.0 é o melhor), usamos uma função por partes que atinge o ápice
-  em 50% e decai levemente se for em direção aos 100% para penalizar o excesso de concorrência.
+    Por isso, em vez de um relacionamento linear (onde 1.0 é o melhor), usamos uma função por partes que atinge o ápice
+    em 50% e decai levemente se for em direção aos 100% para penalizar o excesso de concorrência.
   */
   double occupancy(int threads_per_block)
   {
@@ -96,7 +96,7 @@ private:
   }
 
   /*
-  Calcula quantos blocos cabem na GPU inteira de uma vez e avalia o desperdício na última onda.
+    Calcula quantos blocos cabem na GPU inteira de uma vez e avalia o desperdício na última onda.
   */
   double wave_quantization_efficiency(int total_blocks)
   {
@@ -134,8 +134,11 @@ private:
   }
 
   /*
-  Verifica quão bem o bloco está alinhado com os warps no eixo x. Desalinhamento de warps causa penalidade severa
-  no desempenho.
+    Verifica quão bem o bloco está alinhado com os warps no eixo x. Desalinhamento de warps causa penalidade severa
+    no desempenho.
+
+    Coalescimento só se importa com a dimensão X!
+    O hardware faz o coalescimento ao longo das threads adjacentes no eixo X do warp.
   */
   double memory_coalescing_score(dim3 &block)
   {
@@ -154,7 +157,7 @@ private:
   }
 
 public:
-  KernelScorer(KernelType &kernel, dim3 input_dimensions) : kernel(kernel), input_dimensions(input_dimensions)
+  KernelScorer(KernelType &kernel, dim3 work_dimensions) : kernel(kernel), work_dimensions(work_dimensions)
   {
     this->device_properties = get_device_properties();
   }
@@ -181,6 +184,6 @@ public:
 
   dim3 get_input_dimensions() const
   {
-    return this->input_dimensions;
+    return this->work_dimensions;
   }
 };

@@ -10,29 +10,32 @@
 #include "HillClimbing.hpp"
 
 // ======================================== Multiplicação de Matrizes Ingênuo ========================================
-__global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
-{
-  // Mapeamento 2D das threads para as coordenadas da matriz
-  int col = blockIdx.x * blockDim.x + threadIdx.x;
-  int row = blockIdx.y * blockDim.y + threadIdx.y;
+/*
+  Matriz A com dimensão M x K
+  Matriz B com dimensão K x N
+  Matriz C com dimensão M x N
 
-  // Boundary Check (Proteção de Limites)
-  // Garante que apenas as threads dentro do tamanho válido N façam trabalho.
-  // As threads "excedentes" nas bordas falham silenciosamente aqui, ativando
-  // o desperdício que a boundary_efficiency penaliza
-  if (row < N && col < N)
+  Regra da multiplicação de matrizes: A(MxK) * B(KxN) = C(MxN)
+*/
+__global__ void matrix_multiply(const float *A, const float *B, float *C, const int M, const int N, const int K)
+{
+  // col e row referem-se à matriz de SAÍDA (C), que tem dimensão M x N
+  int col = blockIdx.x * blockDim.x + threadIdx.x; // Eixo X vai até N (largura)
+  int row = blockIdx.y * blockDim.y + threadIdx.y; // Eixo Y vai até M (altura)
+
+  // Validação de índices
+  if (row < M && col < N)
   {
     float sum = 0.0f;
 
-    // Algoritmo Ingênuo: Produto escalar da linha de A pela coluna de B
-    for (int k = 0; k < N; ++k)
+    // k percorre a dimensão interna (K) comum entre A e B
+    for (int k = 0; k < K; ++k)
     {
-      // A é percorrido por linha (acesso contíguo na memória, bom coalescimento)
-      // B é percorrido por coluna (strides longos, péssimo coalescimento)
-      sum += A[row * N + k] * B[k * N + col];
+      // Matriz A: K colunas
+      // Matriz B: N colunas
+      sum += A[row * K + k] * B[k * N + col];
     }
 
-    // Escrita do resultado
     C[row * N + col] = sum;
   }
 }
@@ -40,18 +43,25 @@ __global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
 
 int main(int argc, const char *args[])
 {
-  if (argc != 2)
+  if (argc != 4)
   {
-    std::cerr << "Uso: " << args[0] << " <tamanho_da_matriz>" << std::endl;
+    std::cout << "Multiplicação de Matrizes A x B = C, onde A é MxK, B é KxN e C é MxN" << std::endl;
+    std::cout << "Uso: " << args[0] << " <M> <N> <K>" << std::endl;
     return EXIT_FAILURE;
   }
 
-  // Pega tamanho da matriz a partir do argumento na linha de comando
-  const int INPUT_SIZE = std::stoi(args[1]);
-  const dim3 input_dimensions(INPUT_SIZE, INPUT_SIZE, 1);
+  // Pega tamanho das matrizes a partir dos argumentos na linha de comando
+  const int M = std::stoi(args[1]);
+  const int N = std::stoi(args[2]);
+  const int K = std::stoi(args[3]);
+
+  // As dimensões que estamos interessados são apenas da matriz de resultado C, que é M x N
+  // O valor K só é utilizado pelo kernel para iterar sobre as linhas e colunas de A e B, mas é irrelevante
+  // para a configuração de blocos e grids, que é o que estamos otimizando.
+  const dim3 dimensions(M, N, 1);
 
   // Instanciando o avaliador com o kernel da multiplicação de matrizes e as dimensões de entrada
-  KernelScorer<decltype(matrix_multiply)> scorer(matrix_multiply, input_dimensions);
+  KernelScorer<decltype(matrix_multiply)> scorer(matrix_multiply, dimensions);
 
   // Instanciando os algoritmos de IA
   SimulatedAnnealing<decltype(matrix_multiply)> sa(scorer);
@@ -61,7 +71,9 @@ int main(int argc, const char *args[])
   dim3 initial_block(8, 8);
 
   std::cout << "\n===== Iniciando Algoritmos =====\n";
-  std::cout << "Tamanho da Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
+  std::cout << "Matriz A: " << M << " x " << K << std::endl;
+  std::cout << "Matriz B: " << K << " x " << N << std::endl;
+  std::cout << "Matriz C: " << M << " x " << N << std::endl;
   std::cout << "Bloco Inicial da Busca: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
 
   std::cout << "\n===== Executando Hill Climbing =====\n";
