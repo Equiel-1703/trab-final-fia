@@ -176,10 +176,10 @@ public:
 
     return 0.30 * occupancy_score +
            0.25 * warp_eff +
-           0.10 * wave_eff +
+           0.15 * wave_eff +
            0.10 * boundary_eff +
            0.15 * coalescing +
-           0.10 * spatial_score;
+           0.05 * spatial_score;
   }
 
   dim3 get_input_dimensions() const
