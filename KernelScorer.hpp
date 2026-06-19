@@ -142,18 +142,9 @@ private:
   */
   double memory_coalescing_score(dim3 &block)
   {
-    if (block.x % WARP_SIZE == 0)
-    {
-      return 1.0; // Alinhamento perfeito
-    }
-    else if (static_cast<int>(block.x) >= WARP_SIZE / 2)
-    {
-      return 0.4; // Meio warp (penalidade pesada, gera 2 transações em vez de 1)
-    }
-    else
-    {
-      return 0.1; // Desalinhamento severo (péssima performance)
-    }
+    double penalty_x = static_cast<double>(block.x % WARP_SIZE) / 2.0;
+    double penalty_y = static_cast<double>(block.y % WARP_SIZE) / 2.0;
+    return 1.0 - ((penalty_x + penalty_y) / 31.0);
   }
 
 public:
