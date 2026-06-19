@@ -91,7 +91,7 @@ private:
     }
     else
     {
-      return 1.0 - 0.2 * (raw_occupancy - 0.5); // Cai levemente até 0.9 em 100% de ocupação
+      return 1.0 - 0.4 * (raw_occupancy - 0.5); // Cai levemente até 0.9 em 100% de ocupação
     }
   }
 
@@ -174,12 +174,24 @@ public:
     double spatial_score = this->spatial_locality_score(block);
     double coalescing = this->memory_coalescing_score(block);
 
-    return 0.30 * occupancy_score +
-           0.25 * warp_eff +
-           0.15 * wave_eff +
-           0.10 * boundary_eff +
-           0.15 * coalescing +
-           0.05 * spatial_score;
+    double score_final =
+        0.16 * occupancy_score +
+        0.16 * warp_eff +
+        0.16 * wave_eff +
+        0.16 * boundary_eff +
+        0.17 * coalescing +
+        0.16 * spatial_score;
+
+    std::cout << "==== Block: (" << block.x << ", " << block.y << ", " << block.z << ") ====" << std::endl;
+    std::cout << "Occupancy: " << occupancy_score << std::endl;
+    std::cout << "Warp Efficiency : " << warp_eff << std::endl;
+    std::cout << "Wave Efficiency : " << wave_eff << std::endl;
+    std::cout << "Boundary Efficiency : " << boundary_eff << std::endl;
+    std::cout << "Spatial Locality : " << spatial_score << std::endl;
+    std::cout << "Memory Coalescing : " << coalescing << std::endl;
+    std::cout << "* Final Score : " << score_final << std::endl;
+
+    return score_final;
   }
 
   dim3 get_input_dimensions() const
