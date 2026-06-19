@@ -40,7 +40,14 @@ __global__ void matrix_multiply(const float *A, const float *B, float *C, int N)
 
 int main(int argc, const char *args[])
 {
-  const int INPUT_SIZE = 1000;
+  if (argc != 2)
+  {
+    std::cerr << "Uso: " << args[0] << " <tamanho_da_matriz>" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Pega tamanho da matriz a partir do argumento na linha de comando
+  const int INPUT_SIZE = std::stoi(args[1]);
   const dim3 input_dimensions(INPUT_SIZE, INPUT_SIZE, 1);
 
   // Instanciando o avaliador com o kernel da multiplicação de matrizes e as dimensões de entrada
@@ -54,8 +61,8 @@ int main(int argc, const char *args[])
   dim3 initial_block(8, 8);
 
   std::cout << "\n===== Iniciando Algoritmos =====\n";
-  std::cout << "Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
-  std::cout << "Bloco Inicial: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
+  std::cout << "Tamanho da Matriz: " << INPUT_SIZE << " x " << INPUT_SIZE << "\n";
+  std::cout << "Bloco Inicial da Busca: (" << initial_block.x << ", " << initial_block.y << ")\n\n";
 
   std::cout << "\n===== Executando Hill Climbing =====\n";
   auto hc_result = hc.hill_climbing(initial_block);
