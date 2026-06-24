@@ -138,12 +138,14 @@ private:
   */
   double memory_coalescing_score(dim3 &block)
   {
-    if (block.x % WARP_SIZE == 0)
+    const int block_x = static_cast<int>(block.x);
+
+    if (block_x % WARP_SIZE == 0)
       return 1.0;
-    else if (block.x >= WARP_SIZE / 2)
-      return 0.5;
+    else if (block_x >= WARP_SIZE / 2)
+      return 0.8;
     else
-      return 0.1;
+      return 0.2;
   }
 
   /*
