@@ -134,13 +134,34 @@ private:
   }
 
   /*
-    Verifica quão bem o bloco está alinhado com os warps nos eixos.
+    Verifica quão bem o bloco está alinhado com os warps no eixo X, que é o mais crítico para coalescência de memória.
   */
   double memory_coalescing_score(dim3 &block)
   {
-    double penalty_x = static_cast<double>(block.x % WARP_SIZE) / 2.0;
-    double penalty_y = static_cast<double>(block.y % WARP_SIZE) / 2.0;
-    return 1.0 - ((penalty_x + penalty_y) / 31.0);
+    if (block.x % WARP_SIZE == 0)
+      return 1.0;
+    else if (block.x >= WARP_SIZE / 2)
+      return 0.5;
+    else
+      return 0.1;
+  }
+
+  /*
+    Compara a proporção geométrica (Aspect Ratio) do bloco com a da matriz.
+    Isso ajuda a IA a preferir blocos que 'encaixam' melhor no formato global,
+    minimizando threads lançadas fora do limite útil.
+  */
+  double matrix_alignment_score(dim3 &block)
+  {
+    double matrix_ratio = static_cast<double>(work_dimensions.x) / static_cast<double>(work_dimensions.y);
+    double block_ratio = static_cast<double>(block.x) / static_cast<double>(block.y);
+
+    double max_ratio = std::max(matrix_ratio, block_ratio);
+    if (max_ratio == 0.0)
+      return 0.0;
+
+    double diff = std::abs(matrix_ratio - block_ratio);
+    return 1.0 - (diff / max_ratio);
   }
 
 public:
@@ -160,14 +181,16 @@ public:
     double boundary_eff = this->boundary_efficiency(block, grid);
     double spatial_score = this->spatial_locality_score(block);
     double coalescing = this->memory_coalescing_score(block);
+    double alignment_score = this->matrix_alignment_score(block);
 
     double score_final =
-        0.16 * occupancy_score +
-        0.23 * warp_eff +
-        0.16 * wave_eff +
-        0.16 * boundary_eff +
-        0.10 * coalescing +
-        0.16 * spatial_score;
+        0.15 * occupancy_score +
+        0.15 * warp_eff +
+        0.15 * wave_eff +
+        0.15 * boundary_eff +
+        0.15 * coalescing +
+        0.10 * spatial_score +
+        0.15 * alignment_score;
 
     std::cout << "==== Block: (" << block.x << ", " << block.y << ", " << block.z << ") ====" << std::endl;
     std::cout << "Occupancy: " << occupancy_score << std::endl;
@@ -176,6 +199,7 @@ public:
     std::cout << "Boundary Efficiency : " << boundary_eff << std::endl;
     std::cout << "Spatial Locality : " << spatial_score << std::endl;
     std::cout << "Memory Coalescing : " << coalescing << std::endl;
+    std::cout << "Matrix Alignment : " << alignment_score << std::endl;
     std::cout << "* Final Score : " << score_final << std::endl;
 
     return score_final;
