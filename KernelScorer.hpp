@@ -134,11 +134,7 @@ private:
   }
 
   /*
-    Verifica quão bem o bloco está alinhado com os warps no eixo x. Desalinhamento de warps causa penalidade severa
-    no desempenho.
-
-    Coalescimento só se importa com a dimensão X!
-    O hardware faz o coalescimento ao longo das threads adjacentes no eixo X do warp.
+    Verifica quão bem o bloco está alinhado com os warps nos eixos.
   */
   double memory_coalescing_score(dim3 &block)
   {
@@ -167,10 +163,10 @@ public:
 
     double score_final =
         0.16 * occupancy_score +
-        0.16 * warp_eff +
+        0.23 * warp_eff +
         0.16 * wave_eff +
         0.16 * boundary_eff +
-        0.17 * coalescing +
+        0.10 * coalescing +
         0.16 * spatial_score;
 
     std::cout << "==== Block: (" << block.x << ", " << block.y << ", " << block.z << ") ====" << std::endl;
