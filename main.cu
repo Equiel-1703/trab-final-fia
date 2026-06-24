@@ -58,7 +58,7 @@ int main(int argc, const char *args[])
   // As dimensões que estamos interessados são apenas da matriz de resultado C, que é M x N
   // O valor K só é utilizado pelo kernel para iterar sobre as linhas e colunas de A e B, mas é irrelevante
   // para a configuração de blocos e grids, que é o que estamos otimizando.
-  const dim3 dimensions(M, N, 1);
+  const dim3 dimensions(N, M, 1);
 
   // Instanciando o avaliador com o kernel da multiplicação de matrizes e as dimensões de entrada
   KernelScorer<decltype(matrix_multiply)> scorer(matrix_multiply, dimensions);

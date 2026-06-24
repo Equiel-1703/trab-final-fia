@@ -68,12 +68,8 @@ private:
   }
 
   /*
-    Muitas vezes, 100% de ocupação causa thrashing no cache L1 e esgota registradores, diminuindo o paralelismo em nível
-    de instrução (ILP). A literatura de otimização de CUDA mostra que, geralmente, a partir de 50% a 60% de ocupação,
-    a latência de memória já está bem escondida.
-
-    Por isso, em vez de um relacionamento linear (onde 1.0 é o melhor), usamos uma função por partes que atinge o ápice
-    em 50% e decai levemente se for em direção aos 100% para penalizar o excesso de concorrência.
+    Avalia a ocupação da GPU com base no número de blocos ativos por multiprocessador.
+    Retorna 1.0 para ocupação >= 50% e valores menores para ocupação < 50%.
   */
   double occupancy(int threads_per_block)
   {
@@ -85,13 +81,12 @@ private:
 
     double raw_occupancy = static_cast<double>(active_warps) / static_cast<double>(max_warps);
 
-    if (raw_occupancy <= 0.5)
-    {
-      return raw_occupancy / 0.5; // Cresce de 0.0 até 1.0
-    }
-    else
-    {
-      return 1.0 - 0.4 * (raw_occupancy - 0.5); // Cai levemente até 0.9 em 100% de ocupação
+    // Se tem pelo menos 50% de ocupação, a latência está escondida.
+    // Não punimos blocos com alta ocupação!
+    if (raw_occupancy >= 0.5) {
+      return 1.0; 
+    } else {
+      return raw_occupancy / 0.5;
     }
   }
 
