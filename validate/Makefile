@@ -1,5 +1,5 @@
-OUTPUT_FILE = brute_force.out
-SRC_FILES = brute_force.cu
+OUTPUT_FILE = validate.out
+SRC_FILES = validate.cu
 
 CC = nvcc
 
