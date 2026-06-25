@@ -15,6 +15,8 @@ private:
   cudaDeviceProp device_properties;
   int active_blocks_per_sm = 0;
 
+  bool debug_enable;
+
   /*
     Retorna as propriedades do dispositivo CUDA.
   */
@@ -83,9 +85,12 @@ private:
 
     // Se tem pelo menos 50% de ocupação, a latência está escondida.
     // Não punimos blocos com alta ocupação!
-    if (raw_occupancy >= 0.5) {
-      return 1.0; 
-    } else {
+    if (raw_occupancy >= 0.5)
+    {
+      return 1.0;
+    }
+    else
+    {
       return raw_occupancy / 0.5;
     }
   }
@@ -162,9 +167,10 @@ private:
   }
 
 public:
-  KernelScorer(KernelType &kernel, dim3 work_dimensions) : kernel(kernel), work_dimensions(work_dimensions)
+  KernelScorer(KernelType &kernel, dim3 work_dimensions, bool debug_enable = false) : kernel(kernel), work_dimensions(work_dimensions), debug_enable(debug_enable)
   {
     this->device_properties = get_device_properties();
+    this->debug_enable = debug_enable;
   }
 
   double score(dim3 block, dim3 grid)
@@ -189,15 +195,18 @@ public:
         0.10 * spatial_score +
         0.15 * alignment_score;
 
-    std::cout << "==== Block: (" << block.x << ", " << block.y << ", " << block.z << ") ====" << std::endl;
-    std::cout << "Occupancy: " << occupancy_score << std::endl;
-    std::cout << "Warp Efficiency : " << warp_eff << std::endl;
-    std::cout << "Wave Efficiency : " << wave_eff << std::endl;
-    std::cout << "Boundary Efficiency : " << boundary_eff << std::endl;
-    std::cout << "Spatial Locality : " << spatial_score << std::endl;
-    std::cout << "Memory Coalescing : " << coalescing << std::endl;
-    std::cout << "Matrix Alignment : " << alignment_score << std::endl;
-    std::cout << "* Final Score : " << score_final << std::endl;
+    if (this->debug_enable)
+    {
+      std::cout << "==== Block: (" << block.x << ", " << block.y << ", " << block.z << ") ====" << std::endl;
+      std::cout << "Occupancy: " << occupancy_score << std::endl;
+      std::cout << "Warp Efficiency : " << warp_eff << std::endl;
+      std::cout << "Wave Efficiency : " << wave_eff << std::endl;
+      std::cout << "Boundary Efficiency : " << boundary_eff << std::endl;
+      std::cout << "Spatial Locality : " << spatial_score << std::endl;
+      std::cout << "Memory Coalescing : " << coalescing << std::endl;
+      std::cout << "Matrix Alignment : " << alignment_score << std::endl;
+      std::cout << "* Final Score : " << score_final << std::endl;
+    }
 
     return score_final;
   }
